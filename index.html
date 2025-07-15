@@ -29,12 +29,67 @@
         details > summary {
             cursor: pointer;
         }
-        /* Hide/show calculation mode inputs */
         .calc-mode-content {
             display: none;
         }
         .calc-mode-content.active {
             display: block;
+        }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            body {
+                background: none;
+                font-family: sans-serif;
+            }
+            
+            /* Hide elements that are not part of the report */
+            header, 
+            .lg\\:grid-cols-2 > div:first-child, /* Hides the entire input form column */
+            #calculate-btn,
+            #print-btn,
+            details > summary {
+                display: none;
+            }
+
+            /* Make the results container take up the full page */
+            .lg\\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+            .bg-white {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+
+            /* Ensure the results and schedule are fully visible */
+            #results-container {
+                display: block !important; /* Override the 'hidden' class */
+            }
+            details {
+                page-break-inside: avoid;
+            }
+            details[open] > div {
+                max-height: none;
+                overflow-y: visible;
+                page-break-before: always; /* Start the schedule on a new page */
+            }
+
+            /* Improve chart printing */
+            canvas {
+                max-width: 100% !important;
+                page-break-inside: avoid;
+            }
+
+            .shadow-soft, .rounded-lg, .border {
+                box-shadow: none;
+                border-radius: 0;
+                border: 0;
+            }
         }
     </style>
 </head>
@@ -117,7 +172,16 @@
 
             <!-- Results Section -->
             <div class="bg-white p-8 rounded-lg shadow-soft">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-6">Your Debt Freedom Plan</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Your Debt Freedom Plan</h2>
+                    <button id="print-btn" class="hidden bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-300 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="inline-block mr-2" viewBox="0 0 16 16">
+                          <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                          <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3h8z"/>
+                        </svg>
+                        Print Plan
+                    </button>
+                </div>
                 
                 <div id="results-container" class="text-center p-4 bg-gray-50 rounded-lg hidden">
                     <div class="mb-8">
@@ -181,7 +245,7 @@
         let debtCounter = 0;
         let expenseChartInstance = null;
         let debtProgressChartInstance = null;
-        let calculationMode = 'extra-payment'; // 'extra-payment' or 'target-date'
+        let calculationMode = 'extra-payment';
     
         const expensesContainer = document.getElementById('expenses-container');
         const debtsContainer = document.getElementById('debts-container');
@@ -189,6 +253,7 @@
         const modeTargetDateBtn = document.getElementById('mode-target-date-btn');
         const extraPaymentContent = document.getElementById('extra-payment-mode-content');
         const targetDateContent = document.getElementById('target-date-mode-content');
+        const printBtn = document.getElementById('print-btn');
 
         // --- UI MODE SWITCHING ---
         const setCalculationMode = (mode) => {
@@ -211,6 +276,7 @@
         };
         modeExtraPaymentBtn.addEventListener('click', () => setCalculationMode('extra-payment'));
         modeTargetDateBtn.addEventListener('click', () => setCalculationMode('target-date'));
+        printBtn.addEventListener('click', () => window.print());
 
         // --- DYNAMIC FIELD FUNCTIONS ---
         const addExpenseField = () => {
@@ -310,11 +376,10 @@
             if (calculationMode === 'target-date') {
                 const targetMonths = parseInt(document.getElementById('target-months').value) || 1;
                 let low = 0;
-                let high = totalDebt; // A reasonable upper bound for extra payment
+                let high = totalDebt;
                 let bestExtraPayment = 0;
 
-                // Binary search to find the required extra payment
-                for(let i = 0; i < 100; i++) { // 100 iterations for precision
+                for(let i = 0; i < 100; i++) {
                     let mid = (low + high) / 2;
                     const simResult = runSimulation(debts, totalMinPayment + mid);
                     if (simResult.months <= targetMonths) {
@@ -349,6 +414,7 @@
         const displayResults = (results) => {
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('results-container').classList.remove('hidden');
+            printBtn.classList.remove('hidden'); // Show the print button
     
             const futureDate = new Date();
             futureDate.setMonth(futureDate.getMonth() + results.monthsToFreedom);
@@ -383,6 +449,8 @@
 
             const scheduleContainer = document.getElementById('payment-schedule-container');
             scheduleContainer.innerHTML = '';
+            // Make sure the details section is open for printing
+            scheduleContainer.parentElement.open = true;
             results.paymentSchedule.forEach(monthData => {
                 const monthDiv = document.createElement('div');
                 monthDiv.className = 'mb-4 p-3 border-b';
