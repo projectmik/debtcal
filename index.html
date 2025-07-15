@@ -26,9 +26,15 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
             border-color: #3b82f6;
         }
-        /* Style for the details summary so it can be opened/closed */
         details > summary {
             cursor: pointer;
+        }
+        /* Hide/show calculation mode inputs */
+        .calc-mode-content {
+            display: none;
+        }
+        .calc-mode-content.active {
+            display: block;
         }
     </style>
 </head>
@@ -65,20 +71,37 @@
                 <!-- Expenses Section -->
                 <div class="mb-8">
                     <h3 class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Monthly Expenses</h3>
-                    <div class="space-y-4" id="expenses-container">
-                        <!-- Expense items will be added here dynamically -->
-                    </div>
+                    <div class="space-y-4" id="expenses-container"></div>
                     <button id="add-expense" class="mt-3 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition">+ Add Another Expense</button>
                 </div>
 
                 <!-- Debts Section -->
                 <div>
                     <h3 class="text-lg font-medium text-gray-700 mb-4 border-b pb-2">Current Debts</h3>
-                    <div class="space-y-4" id="debts-container">
-                        <!-- Debt items will be added here dynamically -->
-                    </div>
+                    <div class="space-y-4" id="debts-container"></div>
                     <button id="add-debt" class="mt-3 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition">+ Add Another Debt</button>
                     
+                    <!-- Calculation Mode -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Calculation Method</label>
+                        <div class="flex rounded-md shadow-sm">
+                            <button id="mode-extra-payment-btn" class="flex-1 p-2 bg-blue-600 text-white rounded-l-md text-sm focus:outline-none">By Extra Payment</button>
+                            <button id="mode-target-date-btn" class="flex-1 p-2 bg-white text-gray-700 rounded-r-md border border-gray-300 text-sm focus:outline-none">By Target Date</button>
+                        </div>
+                    </div>
+
+                    <!-- Extra Payment Input (Mode 1) -->
+                    <div id="extra-payment-mode-content" class="calc-mode-content active mt-6">
+                        <label for="extra-payment" class="block text-sm font-medium text-gray-700 mb-1">Extra Monthly Payment ($)</label>
+                        <input type="number" id="extra-payment" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10">
+                    </div>
+
+                    <!-- Target Months Input (Mode 2) -->
+                    <div id="target-date-mode-content" class="calc-mode-content mt-6">
+                        <label for="target-months" class="block text-sm font-medium text-gray-700 mb-1">Target Months to Freedom</label>
+                        <input type="number" id="target-months" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="60" min="1">
+                    </div>
+
                     <!-- Strategy Selection -->
                     <div class="mt-6">
                         <label for="payoff-strategy-select" class="block text-sm font-medium text-gray-700 mb-1">Debt Payoff Strategy</label>
@@ -86,12 +109,6 @@
                             <option value="snowball" selected>Debt Snowball (Lowest Balance First)</option>
                             <option value="avalanche">Debt Avalanche (Highest Interest First)</option>
                         </select>
-                    </div>
-
-                    <!-- Extra Monthly Payment -->
-                    <div class="mt-6">
-                        <label for="extra-payment" class="block text-sm font-medium text-gray-700 mb-1">Extra Monthly Payment ($)</label>
-                        <input type="number" id="extra-payment" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10">
                     </div>
                 </div>
 
@@ -118,7 +135,7 @@
                             <p class="text-xl font-bold text-blue-700" id="total-interest">$0</p>
                         </div>
                         <div class="bg-blue-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-600">Total Monthly Payment</p>
+                            <p class="text-sm text-gray-600">Required Monthly Payment</p>
                             <p class="text-xl font-bold text-blue-700" id="total-payment">$0</p>
                         </div>
                         <div class="bg-blue-50 p-4 rounded-lg">
@@ -132,9 +149,7 @@
 
                     <div class="mt-8 text-left">
                         <h3 class="text-lg font-medium text-gray-700 mb-3">Your Payoff Strategy</h3>
-                        <ul class="space-y-2 text-gray-600 list-disc list-inside" id="payoff-strategy">
-                            <!-- Payoff strategy will be added here dynamically -->
-                        </ul>
+                        <ul class="space-y-2 text-gray-600 list-disc list-inside" id="payoff-strategy"></ul>
                     </div>
 
                     <div class="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-sm text-left">
@@ -142,13 +157,10 @@
                         <p id="financial-insight" class="text-yellow-900"></p>
                     </div>
 
-                    <!-- Detailed Payment Schedule Section -->
                     <div class="mt-8 text-left">
                         <details>
                             <summary class="text-lg font-medium text-gray-700 mb-3 hover:text-blue-600">View Detailed Payment Schedule</summary>
-                            <div id="payment-schedule-container" class="mt-4 max-h-96 overflow-y-auto border rounded-lg p-4 bg-white">
-                                <!-- Detailed schedule will be populated here -->
-                            </div>
+                            <div id="payment-schedule-container" class="mt-4 max-h-96 overflow-y-auto border rounded-lg p-4 bg-white"></div>
                         </details>
                     </div>
                 </div>
@@ -157,7 +169,6 @@
                     <img src="https://placehold.co/300x200/e0e7ff/3730a3?text=Enter+Your+Data" alt="Illustration of financial documents" class="mx-auto mb-6 rounded-lg" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/ffffff?text=Error';">
                     <h3 class="text-xl font-medium text-gray-700 mb-2">Enter Your Financial Details</h3>
                     <p class="text-gray-600 mb-4">Fill in the fields to see your personalized debt freedom plan.</p>
-                    <p class="text-sm text-gray-500">We'll calculate when you'll be debt-free and show you the best strategy to get there.</p>
                 </div>
             </div>
         </div>
@@ -170,64 +181,111 @@
         let debtCounter = 0;
         let expenseChartInstance = null;
         let debtProgressChartInstance = null;
+        let calculationMode = 'extra-payment'; // 'extra-payment' or 'target-date'
     
         const expensesContainer = document.getElementById('expenses-container');
         const debtsContainer = document.getElementById('debts-container');
-    
+        const modeExtraPaymentBtn = document.getElementById('mode-extra-payment-btn');
+        const modeTargetDateBtn = document.getElementById('mode-target-date-btn');
+        const extraPaymentContent = document.getElementById('extra-payment-mode-content');
+        const targetDateContent = document.getElementById('target-date-mode-content');
+
+        // --- UI MODE SWITCHING ---
+        const setCalculationMode = (mode) => {
+            calculationMode = mode;
+            if (mode === 'extra-payment') {
+                modeExtraPaymentBtn.classList.add('bg-blue-600', 'text-white');
+                modeExtraPaymentBtn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+                modeTargetDateBtn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+                modeTargetDateBtn.classList.remove('bg-blue-600', 'text-white');
+                extraPaymentContent.classList.add('active');
+                targetDateContent.classList.remove('active');
+            } else {
+                modeTargetDateBtn.classList.add('bg-blue-600', 'text-white');
+                modeTargetDateBtn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+                modeExtraPaymentBtn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+                modeExtraPaymentBtn.classList.remove('bg-blue-600', 'text-white');
+                targetDateContent.classList.add('active');
+                extraPaymentContent.classList.remove('active');
+            }
+        };
+        modeExtraPaymentBtn.addEventListener('click', () => setCalculationMode('extra-payment'));
+        modeTargetDateBtn.addEventListener('click', () => setCalculationMode('target-date'));
+
         // --- DYNAMIC FIELD FUNCTIONS ---
-    
         const addExpenseField = () => {
             expenseCounter++;
             const newExpense = document.createElement('div');
             newExpense.className = 'expense-item flex gap-2 items-end mt-2';
-            newExpense.innerHTML = `
-                <div class="flex-grow">
-                    ${expenseCounter === 1 ? '<label for="expense-1" class="block text-sm font-medium text-gray-700 mb-1">Expense Name</label>' : ''}
-                    <input type="text" id="expense-${expenseCounter}" class="expense-name input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" placeholder="e.g., Rent, Utilities">
-                </div>
-                <div class="w-32">
-                     ${expenseCounter === 1 ? '<label for="amount-1" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>' : ''}
-                    <input type="number" id="amount-${expenseCounter}" class="expense-amount input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10">
-                </div>
-                <button class="delete-item bg-red-100 text-red-600 px-2 py-2 rounded-md hover:bg-red-200 transition" aria-label="Remove item">✕</button>
-            `;
+            newExpense.innerHTML = `<div class="flex-grow">${expenseCounter===1?'<label for="expense-1" class="block text-sm font-medium text-gray-700 mb-1">Expense Name</label>':''}<input type="text" id="expense-${expenseCounter}" class="expense-name input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" placeholder="e.g., Rent"></div><div class="w-32">${expenseCounter===1?'<label for="amount-1" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>':''}<input type="number" id="amount-${expenseCounter}" class="expense-amount input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10"></div><button class="delete-item bg-red-100 text-red-600 px-2 py-2 rounded-md hover:bg-red-200 transition" aria-label="Remove item">✕</button>`;
             expensesContainer.appendChild(newExpense);
             newExpense.querySelector('.delete-item').addEventListener('click', () => newExpense.remove());
         };
-    
         const addDebtField = () => {
             debtCounter++;
             const newDebt = document.createElement('div');
             newDebt.className = 'debt-item flex gap-2 items-end mt-2';
-            newDebt.innerHTML = `
-                <div class="flex-grow">
-                    ${debtCounter === 1 ? '<label for="debt-1" class="block text-sm font-medium text-gray-700 mb-1">Debt Name</label>' : ''}
-                    <input type="text" id="debt-${debtCounter}" class="debt-name input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" placeholder="e.g., Credit Card, Student Loan">
-                </div>
-                <div class="w-24">
-                    ${debtCounter === 1 ? '<label for="balance-1" class="block text-sm font-medium text-gray-700 mb-1">Balance ($)</label>' : ''}
-                    <input type="number" id="balance-${debtCounter}" class="debt-balance input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="100">
-                </div>
-                <div class="w-24">
-                    ${debtCounter === 1 ? '<label for="interest-1" class="block text-sm font-medium text-gray-700 mb-1">Interest (%)</label>' : ''}
-                    <input type="number" id="interest-${debtCounter}" class="debt-interest input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="0.1">
-                </div>
-                <div class="w-24">
-                    ${debtCounter === 1 ? '<label for="payment-1" class="block text-sm font-medium text-gray-700 mb-1">Min. Pmt ($)</label>' : ''}
-                    <input type="number" id="payment-${debtCounter}" class="debt-min-payment input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10">
-                </div>
-                <button class="delete-item bg-red-100 text-red-600 px-2 py-2 rounded-md hover:bg-red-200 transition" aria-label="Remove item">✕</button>
-            `;
+            newDebt.innerHTML = `<div class="flex-grow">${debtCounter===1?'<label for="debt-1" class="block text-sm font-medium text-gray-700 mb-1">Debt Name</label>':''}<input type="text" id="debt-${debtCounter}" class="debt-name input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" placeholder="e.g., Credit Card"></div><div class="w-24">${debtCounter===1?'<label for="balance-1" class="block text-sm font-medium text-gray-700 mb-1">Balance ($)</label>':''}<input type="number" id="balance-${debtCounter}" class="debt-balance input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="100"></div><div class="w-24">${debtCounter===1?'<label for="interest-1" class="block text-sm font-medium text-gray-700 mb-1">Interest (%)</label>':''}<input type="number" id="interest-${debtCounter}" class="debt-interest input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="0.1"></div><div class="w-24">${debtCounter===1?'<label for="payment-1" class="block text-sm font-medium text-gray-700 mb-1">Min. Pmt ($)</label>':''}<input type="number" id="payment-${debtCounter}" class="debt-min-payment input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10"></div><button class="delete-item bg-red-100 text-red-600 px-2 py-2 rounded-md hover:bg-red-200 transition" aria-label="Remove item">✕</button>`;
             debtsContainer.appendChild(newDebt);
             newDebt.querySelector('.delete-item').addEventListener('click', () => newDebt.remove());
         };
-        
         document.getElementById('add-expense').addEventListener('click', addExpenseField);
         document.getElementById('add-debt').addEventListener('click', addDebtField);
-        
         addExpenseField();
         addDebtField();
     
+        // --- SIMULATION HELPER ---
+        const runSimulation = (debts, totalMonthlyPayment) => {
+            let months = 0;
+            let totalInterestPaid = 0;
+            let tempDebts = JSON.parse(JSON.stringify(debts));
+            let currentTotalDebt = tempDebts.reduce((sum, debt) => sum + debt.balance, 0);
+            const paymentSchedule = [];
+            const debtProgress = [currentTotalDebt];
+
+            while (currentTotalDebt > 0 && months < 600) {
+                months++;
+                let interestThisMonth = 0;
+                const monthPayments = { month: months, payments: [], remainingBalance: 0 };
+
+                for (const debt of tempDebts) {
+                    if (debt.balance > 0) {
+                        const monthlyInterest = (debt.balance * (debt.interest / 100)) / 12;
+                        debt.balance += monthlyInterest;
+                        interestThisMonth += monthlyInterest;
+                    }
+                }
+                totalInterestPaid += interestThisMonth;
+
+                let paymentPool = totalMonthlyPayment;
+                for (const debt of tempDebts) {
+                    if (debt.balance > 0) {
+                        const payment = Math.min(debt.balance, debt.minPayment);
+                        debt.balance -= payment;
+                        paymentPool -= payment;
+                        if(payment > 0) monthPayments.payments.push({ name: debt.name, amount: payment });
+                    }
+                }
+                for (const debt of tempDebts) {
+                    if (debt.balance > 0 && paymentPool > 0) {
+                        const extraPay = Math.min(debt.balance, paymentPool);
+                        debt.balance -= extraPay;
+                        paymentPool -= extraPay;
+                        const existingPayment = monthPayments.payments.find(p => p.name === debt.name);
+                        if (existingPayment) existingPayment.amount += extraPay;
+                        else if(extraPay > 0) monthPayments.payments.push({ name: debt.name, amount: extraPay });
+                    }
+                }
+                
+                currentTotalDebt = tempDebts.reduce((sum, debt) => sum + debt.balance, 0);
+                monthPayments.remainingBalance = currentTotalDebt;
+                paymentSchedule.push(monthPayments);
+                debtProgress.push(Math.max(0, currentTotalDebt));
+            }
+            return { months, totalInterestPaid, debtProgress, paymentSchedule };
+        };
+
+        // --- MAIN CALCULATION LOGIC ---
         const calculateDebtFreedomPlan = () => {
             const primaryIncome = parseFloat(document.getElementById('primary-income').value) || 0;
             const secondaryIncome = parseFloat(document.getElementById('secondary-income').value) || 0;
@@ -239,86 +297,55 @@
             const expenseValues = Array.from(expenseInputs).map(input => parseFloat(input.value) || 0);
     
             const debtItems = document.querySelectorAll('.debt-item');
-            let debts = Array.from(debtItems).map(item => ({
-                name: item.querySelector('.debt-name').value || 'Unnamed Debt',
-                balance: parseFloat(item.querySelector('.debt-balance').value) || 0,
-                interest: parseFloat(item.querySelector('.debt-interest').value) || 0,
-                minPayment: parseFloat(item.querySelector('.debt-min-payment').value) || 0,
-            })).filter(debt => debt.balance > 0);
+            let debts = Array.from(debtItems).map(item => ({ name: item.querySelector('.debt-name').value||'Unnamed Debt', balance: parseFloat(item.querySelector('.debt-balance').value)||0, interest: parseFloat(item.querySelector('.debt-interest').value)||0, minPayment: parseFloat(item.querySelector('.debt-min-payment').value)||0 })).filter(debt => debt.balance > 0);
             
-            const extraPayment = parseFloat(document.getElementById('extra-payment').value) || 0;
             const strategy = document.getElementById('payoff-strategy-select').value;
+            if (strategy === 'avalanche') debts.sort((a, b) => b.interest - a.interest);
+            else debts.sort((a, b) => a.balance - b.balance);
             
             const totalDebt = debts.reduce((sum, debt) => sum + debt.balance, 0);
             const totalMinPayment = debts.reduce((sum, debt) => sum + debt.minPayment, 0);
-            const totalMonthlyPayment = totalMinPayment + extraPayment;
-    
-            if (strategy === 'avalanche') {
-                debts.sort((a, b) => b.interest - a.interest);
-            } else {
-                debts.sort((a, b) => a.balance - b.balance);
-            }
-            
-            let months = 0;
-            let totalInterestPaid = 0;
-            let currentTotalDebt = totalDebt;
-            const debtProgress = [totalDebt];
-            const paymentSchedule = [];
-            let tempDebts = JSON.parse(JSON.stringify(debts));
-    
-            while (currentTotalDebt > 0 && months < 600) {
-                months++;
-                let interestThisMonth = 0;
-                const monthPayments = { month: months, payments: [], remainingBalance: 0 };
-                
-                for (const debt of tempDebts) {
-                    if (debt.balance > 0) {
-                        const monthlyInterest = (debt.balance * (debt.interest / 100)) / 12;
-                        debt.balance += monthlyInterest;
-                        interestThisMonth += monthlyInterest;
+            let extraPayment, totalMonthlyPayment, monthsToFreedom, totalInterest, debtProgress, paymentSchedule;
+
+            if (calculationMode === 'target-date') {
+                const targetMonths = parseInt(document.getElementById('target-months').value) || 1;
+                let low = 0;
+                let high = totalDebt; // A reasonable upper bound for extra payment
+                let bestExtraPayment = 0;
+
+                // Binary search to find the required extra payment
+                for(let i = 0; i < 100; i++) { // 100 iterations for precision
+                    let mid = (low + high) / 2;
+                    const simResult = runSimulation(debts, totalMinPayment + mid);
+                    if (simResult.months <= targetMonths) {
+                        bestExtraPayment = mid;
+                        high = mid;
+                    } else {
+                        low = mid;
                     }
                 }
-                totalInterestPaid += interestThisMonth;
-    
-                let paymentPool = totalMonthlyPayment;
-    
-                for (const debt of tempDebts) {
-                    if (debt.balance > 0) {
-                        const payment = Math.min(debt.balance, debt.minPayment);
-                        debt.balance -= payment;
-                        paymentPool -= payment;
-                        if(payment > 0) monthPayments.payments.push({ name: debt.name, amount: payment });
-                    }
-                }
-    
-                for (const debt of tempDebts) {
-                    if (debt.balance > 0 && paymentPool > 0) {
-                        const extraPay = Math.min(debt.balance, paymentPool);
-                        debt.balance -= extraPay;
-                        paymentPool -= extraPay;
-                        
-                        const existingPayment = monthPayments.payments.find(p => p.name === debt.name);
-                        if (existingPayment) {
-                            existingPayment.amount += extraPay;
-                        } else if(extraPay > 0) {
-                            monthPayments.payments.push({ name: debt.name, amount: extraPay });
-                        }
-                    }
-                }
-                
-                currentTotalDebt = tempDebts.reduce((sum, debt) => sum + debt.balance, 0);
-                monthPayments.remainingBalance = currentTotalDebt;
-                paymentSchedule.push(monthPayments);
-                debtProgress.push(Math.max(0, currentTotalDebt));
+                extraPayment = bestExtraPayment;
+                totalMonthlyPayment = totalMinPayment + extraPayment;
+                const finalSim = runSimulation(debts, totalMonthlyPayment);
+                monthsToFreedom = finalSim.months;
+                totalInterest = finalSim.totalInterestPaid;
+                debtProgress = finalSim.debtProgress;
+                paymentSchedule = finalSim.paymentSchedule;
+
+            } else { // 'extra-payment' mode
+                extraPayment = parseFloat(document.getElementById('extra-payment').value) || 0;
+                totalMonthlyPayment = totalMinPayment + extraPayment;
+                const simResult = runSimulation(debts, totalMonthlyPayment);
+                monthsToFreedom = simResult.months;
+                totalInterest = simResult.totalInterestPaid;
+                debtProgress = simResult.debtProgress;
+                paymentSchedule = simResult.paymentSchedule;
             }
     
-            return {
-                totalDebt, totalInterest: totalInterestPaid, monthlyPayment: totalMonthlyPayment,
-                monthsToFreedom: months, debtProgress, totalIncome, totalExpenses,
-                expenseNames, expenseValues, strategy, paymentSchedule
-            };
+            return { totalDebt, totalInterest, monthlyPayment: totalMonthlyPayment, monthsToFreedom, debtProgress, totalIncome, totalExpenses, expenseNames, expenseValues, strategy, paymentSchedule, extraPayment };
         };
     
+        // --- DISPLAY RESULTS ---
         const displayResults = (results) => {
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('results-container').classList.remove('hidden');
@@ -334,77 +361,34 @@
     
             if (debtProgressChartInstance) debtProgressChartInstance.destroy();
             const debtCtx = document.getElementById('debtProgressChart').getContext('2d');
-            debtProgressChartInstance = new Chart(debtCtx, {
-                type: 'line', data: {
-                    labels: Array.from({ length: results.monthsToFreedom + 1 }, (_, i) => `Month ${i}`),
-                    datasets: [{
-                        label: 'Remaining Debt Balance', data: results.debtProgress, borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true, plugins: { title: { display: true, text: 'Debt Balance Over Time' } },
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Debt Balance ($)' } } }
-                }
-            });
+            debtProgressChartInstance = new Chart(debtCtx, { type: 'line', data: { labels: Array.from({ length: results.monthsToFreedom + 1 }, (_, i) => `Month ${i}`), datasets: [{ label: 'Remaining Debt Balance', data: results.debtProgress, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.1 }] }, options: { responsive: true, plugins: { title: { display: true, text: 'Debt Balance Over Time' } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Debt Balance ($)' } } } } });
     
             if (expenseChartInstance) expenseChartInstance.destroy();
             const expenseCtx = document.getElementById('expensesChart').getContext('2d');
-            expenseChartInstance = new Chart(expenseCtx, {
-                type: 'doughnut', data: {
-                    labels: results.expenseNames,
-                    datasets: [{
-                        label: 'Expenses', data: results.expenseValues,
-                        backgroundColor: ['#3b82f6', '#ef4444', '#f97316', '#84cc16', '#14b8a6', '#a855f7', '#64748b'], borderWidth: 1
-                    }]
-                },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Monthly Expenses Breakdown' } } }
-            });
+            expenseChartInstance = new Chart(expenseCtx, { type: 'doughnut', data: { labels: results.expenseNames, datasets: [{ label: 'Expenses', data: results.expenseValues, backgroundColor: ['#3b82f6', '#ef4444', '#f97316', '#84cc16', '#14b8a6', '#a855f7', '#64748b'], borderWidth: 1 }] }, options: { responsive: true, plugins: { title: { display: true, text: 'Monthly Expenses Breakdown' } } } });
             
             const years = Math.floor(results.monthsToFreedom / 12);
             const months = results.monthsToFreedom % 12;
-            const strategyText = results.strategy === 'avalanche' ? 
-                "Your plan uses the <strong>Debt Avalanche</strong> method, targeting debts with the highest interest rate first to save you the most money." : 
-                "Your plan uses the <strong>Debt Snowball</strong> method, targeting debts with the lowest balance first to build momentum.";
-            
-            document.getElementById('payoff-strategy').innerHTML = `
-                <li>${strategyText}</li>
-                <li>You'll pay a total of <strong>$${results.monthlyPayment.toLocaleString()}</strong> towards debts each month.</li>
-                <li>You are projected to be debt-free in <strong>${years} years and ${months} months</strong>.</li>
-            `;
+            const strategyText = results.strategy === 'avalanche' ? "using the <strong>Debt Avalanche</strong> method." : "using the <strong>Debt Snowball</strong> method.";
+            document.getElementById('payoff-strategy').innerHTML = `<li>To meet your goal, you'll pay <strong>$${results.monthlyPayment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> towards debts each month, ${strategyText}</li><li>You are projected to be debt-free in <strong>${years} years and ${months} months</strong>.</li>`;
     
             const totalMinPayment = Array.from(document.querySelectorAll('.debt-min-payment')).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
             const disposableIncome = results.totalIncome - results.totalExpenses - totalMinPayment;
-            const extraPayment = parseFloat(document.getElementById('extra-payment').value) || 0;
             const insightElement = document.getElementById('financial-insight');
-            if (disposableIncome < 0) {
-                insightElement.textContent = `Warning: Your monthly expenses and minimum debt payments ($${(results.totalExpenses + totalMinPayment).toLocaleString()}) exceed your income ($${results.totalIncome.toLocaleString()}). This is unsustainable. You must either increase your income or decrease expenses immediately.`;
+            if (disposableIncome < results.extraPayment) {
+                insightElement.innerHTML = `<span class="font-bold">Warning:</span> To meet your goal, a monthly extra payment of $${results.extraPayment.toLocaleString(undefined, {minimumFractionDigits: 2})} is required, but you only have $${disposableIncome.toLocaleString(undefined, {minimumFractionDigits: 2})} available after expenses and minimum payments. This goal is not currently achievable.`;
             } else {
-                insightElement.textContent = `After all expenses and minimum debt payments, you have $${disposableIncome.toLocaleString()} left over. Your plan uses $${extraPayment.toLocaleString()} of this for extra debt payments. Great job allocating extra funds to become debt-free faster!`;
+                insightElement.textContent = `To meet your goal, your plan requires an extra payment of $${results.extraPayment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} each month. This is achievable with your available income.`;
             }
 
-            // Populate the detailed payment schedule
             const scheduleContainer = document.getElementById('payment-schedule-container');
-            scheduleContainer.innerHTML = ''; // Clear previous results
+            scheduleContainer.innerHTML = '';
             results.paymentSchedule.forEach(monthData => {
                 const monthDiv = document.createElement('div');
                 monthDiv.className = 'mb-4 p-3 border-b';
-                
                 let paymentList = '';
-                monthData.payments.forEach(p => {
-                    paymentList += `<li class="flex justify-between"><span>${p.name}:</span> <span class="font-medium">$${p.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></li>`;
-                });
-
-                monthDiv.innerHTML = `
-                    <h4 class="font-semibold text-md text-gray-800">Month ${monthData.month}</h4>
-                    <ul class="text-sm text-gray-600 mt-2 space-y-1">
-                        ${paymentList}
-                    </ul>
-                    <p class="text-sm text-gray-800 mt-2 pt-2 border-t font-semibold flex justify-between">
-                        <span>Remaining Balance:</span>
-                        <span>$${monthData.remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                    </p>
-                `;
+                monthData.payments.forEach(p => { paymentList += `<li class="flex justify-between"><span>${p.name}:</span> <span class="font-medium">$${p.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></li>`; });
+                monthDiv.innerHTML = `<h4 class="font-semibold text-md text-gray-800">Month ${monthData.month}</h4><ul class="text-sm text-gray-600 mt-2 space-y-1">${paymentList}</ul><p class="text-sm text-gray-800 mt-2 pt-2 border-t font-semibold flex justify-between"><span>Remaining Balance:</span><span>$${monthData.remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></p>`;
                 scheduleContainer.appendChild(monthDiv);
             });
         };
