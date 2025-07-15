@@ -26,6 +26,10 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
             border-color: #3b82f6;
         }
+        /* Style for the details summary so it can be opened/closed */
+        details > summary {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen">
@@ -49,11 +53,11 @@
                     <div class="space-y-4">
                         <div>
                             <label for="primary-income" class="block text-sm font-medium text-gray-700 mb-1">Primary Income ($)</label>
-                            <input type="number" id="primary-income" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="4000" min="0" step="100">
+                            <input type="number" id="primary-income" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="100">
                         </div>
                         <div>
                             <label for="secondary-income" class="block text-sm font-medium text-gray-700 mb-1">Secondary Income ($)</label>
-                            <input type="number" id="secondary-income" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="500" min="0" step="100">
+                            <input type="number" id="secondary-income" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="100">
                         </div>
                     </div>
                 </div>
@@ -87,7 +91,7 @@
                     <!-- Extra Monthly Payment -->
                     <div class="mt-6">
                         <label for="extra-payment" class="block text-sm font-medium text-gray-700 mb-1">Extra Monthly Payment ($)</label>
-                        <input type="number" id="extra-payment" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="200" min="0" step="10">
+                        <input type="number" id="extra-payment" class="input-highlight w-full px-4 py-2 border rounded-md focus:outline-none" value="0" min="0" step="10">
                     </div>
                 </div>
 
@@ -137,6 +141,16 @@
                         <h4 class="font-semibold text-yellow-800 mb-2">Financial Insights</h4>
                         <p id="financial-insight" class="text-yellow-900"></p>
                     </div>
+
+                    <!-- Detailed Payment Schedule Section -->
+                    <div class="mt-8 text-left">
+                        <details>
+                            <summary class="text-lg font-medium text-gray-700 mb-3 hover:text-blue-600">View Detailed Payment Schedule</summary>
+                            <div id="payment-schedule-container" class="mt-4 max-h-96 overflow-y-auto border rounded-lg p-4 bg-white">
+                                <!-- Detailed schedule will be populated here -->
+                            </div>
+                        </details>
+                    </div>
                 </div>
 
                 <div id="empty-state" class="text-center p-8">
@@ -162,7 +176,6 @@
     
         // --- DYNAMIC FIELD FUNCTIONS ---
     
-        // Function to add a new expense field
         const addExpenseField = () => {
             expenseCounter++;
             const newExpense = document.createElement('div');
@@ -182,7 +195,6 @@
             newExpense.querySelector('.delete-item').addEventListener('click', () => newExpense.remove());
         };
     
-        // Function to add a new debt field
         const addDebtField = () => {
             debtCounter++;
             const newDebt = document.createElement('div');
@@ -210,18 +222,13 @@
             newDebt.querySelector('.delete-item').addEventListener('click', () => newDebt.remove());
         };
         
-        // --- EVENT LISTENERS for adding fields ---
         document.getElementById('add-expense').addEventListener('click', addExpenseField);
         document.getElementById('add-debt').addEventListener('click', addDebtField);
         
-        // Add initial dynamic fields
         addExpenseField();
         addDebtField();
     
-    
-        // --- CALCULATION LOGIC ---
         const calculateDebtFreedomPlan = () => {
-            // 1. Gather all inputs
             const primaryIncome = parseFloat(document.getElementById('primary-income').value) || 0;
             const secondaryIncome = parseFloat(document.getElementById('secondary-income').value) || 0;
             const totalIncome = primaryIncome + secondaryIncome;
@@ -246,25 +253,24 @@
             const totalMinPayment = debts.reduce((sum, debt) => sum + debt.minPayment, 0);
             const totalMonthlyPayment = totalMinPayment + extraPayment;
     
-            // 2. Simulation Setup: Sort debts based on the selected strategy
             if (strategy === 'avalanche') {
-                debts.sort((a, b) => b.interest - a.interest); // Highest interest first
+                debts.sort((a, b) => b.interest - a.interest);
             } else {
-                debts.sort((a, b) => a.balance - b.balance); // Lowest balance first (Snowball)
+                debts.sort((a, b) => a.balance - b.balance);
             }
             
             let months = 0;
             let totalInterestPaid = 0;
             let currentTotalDebt = totalDebt;
             const debtProgress = [totalDebt];
-            let tempDebts = JSON.parse(JSON.stringify(debts)); // Create a deep copy for simulation
+            const paymentSchedule = [];
+            let tempDebts = JSON.parse(JSON.stringify(debts));
     
-            // 3. Run month-by-month simulation
-            while (currentTotalDebt > 0 && months < 600) { // Safety break at 50 years
+            while (currentTotalDebt > 0 && months < 600) {
                 months++;
                 let interestThisMonth = 0;
+                const monthPayments = { month: months, payments: [], remainingBalance: 0 };
                 
-                // Accrue interest on all debts
                 for (const debt of tempDebts) {
                     if (debt.balance > 0) {
                         const monthlyInterest = (debt.balance * (debt.interest / 100)) / 12;
@@ -276,43 +282,43 @@
     
                 let paymentPool = totalMonthlyPayment;
     
-                // Make minimum payments on all debts
                 for (const debt of tempDebts) {
                     if (debt.balance > 0) {
                         const payment = Math.min(debt.balance, debt.minPayment);
                         debt.balance -= payment;
                         paymentPool -= payment;
+                        if(payment > 0) monthPayments.payments.push({ name: debt.name, amount: payment });
                     }
                 }
     
-                // Apply snowball/avalanche payment (extra + paid-off minimums) to the target debt
                 for (const debt of tempDebts) {
                     if (debt.balance > 0 && paymentPool > 0) {
                         const extraPay = Math.min(debt.balance, paymentPool);
                         debt.balance -= extraPay;
                         paymentPool -= extraPay;
+                        
+                        const existingPayment = monthPayments.payments.find(p => p.name === debt.name);
+                        if (existingPayment) {
+                            existingPayment.amount += extraPay;
+                        } else if(extraPay > 0) {
+                            monthPayments.payments.push({ name: debt.name, amount: extraPay });
+                        }
                     }
                 }
                 
                 currentTotalDebt = tempDebts.reduce((sum, debt) => sum + debt.balance, 0);
+                monthPayments.remainingBalance = currentTotalDebt;
+                paymentSchedule.push(monthPayments);
                 debtProgress.push(Math.max(0, currentTotalDebt));
             }
     
             return {
-                totalDebt,
-                totalInterest: totalInterestPaid,
-                monthlyPayment: totalMonthlyPayment,
-                monthsToFreedom: months,
-                debtProgress,
-                totalIncome,
-                totalExpenses,
-                expenseNames,
-                expenseValues,
-                strategy 
+                totalDebt, totalInterest: totalInterestPaid, monthlyPayment: totalMonthlyPayment,
+                monthsToFreedom: months, debtProgress, totalIncome, totalExpenses,
+                expenseNames, expenseValues, strategy, paymentSchedule
             };
         };
     
-        // --- DISPLAY RESULTS ---
         const displayResults = (results) => {
             document.getElementById('empty-state').classList.add('hidden');
             document.getElementById('results-container').classList.remove('hidden');
@@ -326,7 +332,6 @@
             document.getElementById('total-payment').textContent = `$${results.monthlyPayment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('months-to-freedom').textContent = results.monthsToFreedom;
     
-            // Debt Progress Chart
             if (debtProgressChartInstance) debtProgressChartInstance.destroy();
             const debtCtx = document.getElementById('debtProgressChart').getContext('2d');
             debtProgressChartInstance = new Chart(debtCtx, {
@@ -343,7 +348,6 @@
                 }
             });
     
-            // Expenses Chart
             if (expenseChartInstance) expenseChartInstance.destroy();
             const expenseCtx = document.getElementById('expensesChart').getContext('2d');
             expenseChartInstance = new Chart(expenseCtx, {
@@ -357,7 +361,6 @@
                 options: { responsive: true, plugins: { title: { display: true, text: 'Monthly Expenses Breakdown' } } }
             });
             
-            // Payoff Strategy
             const years = Math.floor(results.monthsToFreedom / 12);
             const months = results.monthsToFreedom % 12;
             const strategyText = results.strategy === 'avalanche' ? 
@@ -370,7 +373,6 @@
                 <li>You are projected to be debt-free in <strong>${years} years and ${months} months</strong>.</li>
             `;
     
-            // Financial Insight
             const totalMinPayment = Array.from(document.querySelectorAll('.debt-min-payment')).reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
             const disposableIncome = results.totalIncome - results.totalExpenses - totalMinPayment;
             const extraPayment = parseFloat(document.getElementById('extra-payment').value) || 0;
@@ -380,15 +382,38 @@
             } else {
                 insightElement.textContent = `After all expenses and minimum debt payments, you have $${disposableIncome.toLocaleString()} left over. Your plan uses $${extraPayment.toLocaleString()} of this for extra debt payments. Great job allocating extra funds to become debt-free faster!`;
             }
+
+            // Populate the detailed payment schedule
+            const scheduleContainer = document.getElementById('payment-schedule-container');
+            scheduleContainer.innerHTML = ''; // Clear previous results
+            results.paymentSchedule.forEach(monthData => {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'mb-4 p-3 border-b';
+                
+                let paymentList = '';
+                monthData.payments.forEach(p => {
+                    paymentList += `<li class="flex justify-between"><span>${p.name}:</span> <span class="font-medium">$${p.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></li>`;
+                });
+
+                monthDiv.innerHTML = `
+                    <h4 class="font-semibold text-md text-gray-800">Month ${monthData.month}</h4>
+                    <ul class="text-sm text-gray-600 mt-2 space-y-1">
+                        ${paymentList}
+                    </ul>
+                    <p class="text-sm text-gray-800 mt-2 pt-2 border-t font-semibold flex justify-between">
+                        <span>Remaining Balance:</span>
+                        <span>$${monthData.remainingBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </p>
+                `;
+                scheduleContainer.appendChild(monthDiv);
+            });
         };
     
-        // --- MAIN EVENT LISTENER ---
         document.getElementById('calculate-btn').addEventListener('click', () => {
             const results = calculateDebtFreedomPlan();
             if (results.totalDebt > 0) {
                 displayResults(results);
             } else {
-                // Use a more modern, non-blocking notification if possible, but alert is simple and effective.
                 alert("Please enter at least one debt with a balance greater than zero to calculate a plan.");
             }
         });
